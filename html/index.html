@@ -1,1 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智学伴行 — AI大学生全能学习助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --primary-light: #2A5280;
+            --secondary: #2563EB;
+            --secondary-light: #3B82F6;
+            --accent: #60A5FA;
+            --accent-light: #93C5FD;
+            --bg: #F0F4F8;
+            --card-bg: #FFFFFF;
+            --text: #1E293B;
+            --text-light: #64748B;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: var(--bg);
+            padding-top: 56px;
+            min-height: 100vh;
+            color: var(--text);
+        }
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            box-shadow: 0 2px 12px rgba(30,58,95,0.2);
+            padding: 0.3rem 1rem;
+        }
+        .navbar-brand {
+            color: #fff !important;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .navbar-brand i { font-size: 1.3rem; color: var(--accent); }
+        .nav-link {
+            color: rgba(255,255,255,0.75) !important;
+            font-size: 0.9rem;
+            padding: 0.4rem 0.7rem !important;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #fff !important;
+            background: rgba(255,255,255,0.12);
+        }
+        .nav-link i { margin-right: 4px; }
+        .navbar-toggler { border-color: rgba(255,255,255,0.3); }
+        .navbar-toggler-icon { filter: invert(1); }
+        .btn-logout {
+            color: rgba(255,255,255,0.8) !important;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.85rem;
+            padding: 0.25rem 0.75rem;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.1); color: #fff !important; }
 
+        /* Content */
+        .content-section { display: none; animation: fadeIn 0.4s ease; }
+        .content-section.active { display: block; }
+        .content-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .content-card h4 {
+            color: var(--primary);
+            font-size: 1.15rem;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .content-card h4 i { color: var(--secondary); }
+
+        /* Home */
+        .home-banner {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .home-banner h2 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+        .home-banner p { opacity: 0.9; font-size: 1.05rem; margin-bottom: 20px; }
+        .home-banner .btn { margin: 0 6px; }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .feature-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--secondary);
+            box-shadow: 0 8px 24px rgba(37,99,235,0.12);
+        }
+        .feature-card i { font-size: 2rem; color: var(--secondary); margin-bottom: 10px; }
+        .feature-card h5 { font-size: 0.95rem; color: var(--primary); margin-bottom: 4px; }
+        .feature-card small { color: var(--text-light); font-size: 0.78rem; }
+
+        /* Stat badges */
+        .stat-row { display: flex; gap: 14px; flex-wrap: wrap; }
+        .stat-badge {
+            flex: 1; min-width: 100px;
+            background: #fff; border-radius: 10px; padding: 14px;
+            text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+        }
+        .stat-badge .num { font-size: 1.6rem; font-weight: 700; color: var(--secondary); }
+        .stat-badge .lbl { font-size: 0.8rem; color: var(--text-light); }
+
+        /* AI result areas */
+        .ai-result {
+            min-height: 120px; max-height: 500px; overflow-y: auto;
+            background: #F8FAFC; border-radius: 8px; padding: 16px;
+            margin-top: 12px; white-space: pre-wrap; line-height: 1.7;
+            font-size: 0.9rem; border: 1px solid #E2E8F0;
+        }
+        .ai-result.loading { display: flex; align-items: center; justify-content: center; color: var(--text-light); }
+
+        /* Course list */
+        .course-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; margin-bottom: 6px;
+            background: #F8FAFC; border-radius: 8px; cursor: pointer;
+            transition: all 0.2s; border-left: 3px solid transparent;
+        }
+        .course-item:hover { background: #EFF6FF; }
+        .course-item.active {
+            background: #DBEAFE;
+            border-left-color: var(--secondary);
+            font-weight: 600;
+        }
+        .course-item .course-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+
+        /* Step list */
+        .step-item {
+            padding: 12px 14px; margin-bottom: 8px; border-radius: 8px;
+            background: #F8FAFC; cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .step-item:hover { background: #EFF6FF; }
+        .step-item.done { background: #ECFDF5; color: #059669; text-decoration: line-through; }
+
+        /* Error book */
+        .error-card {
+            background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px;
+            padding: 14px; margin-bottom: 10px;
+        }
+        .error-card.resolved { background: #ECFDF5; border-color: #A7F3D0; }
+
+        /* Buttons */
+        .btn-primary-custom {
+            background: var(--secondary); border: none; color: #fff;
+            padding: 0.45rem 1.2rem; border-radius: 8px; font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary-custom:hover { background: #1D4ED8; }
+        .btn-outline-custom {
+            border: 1.5px solid var(--secondary); color: var(--secondary);
+            background: transparent; padding: 0.4rem 1rem; border-radius: 8px;
+        }
+        .btn-outline-custom:hover { background: var(--secondary); color: #fff; }
+
+        /* Input area styling */
+        textarea.form-control, input.form-control, select.form-select {
+            border-radius: 8px; border: 1.5px solid #E2E8F0;
+            font-size: 0.9rem; transition: border-color 0.2s;
+        }
+        textarea.form-control:focus, input.form-control:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
+        }
+
+        /* Tabs inside modules */
+        .module-tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+        .module-tab {
+            padding: 6px 16px; border-radius: 20px; cursor: pointer;
+            font-size: 0.85rem; background: #F1F5F9; border: none;
+            transition: all 0.2s; color: var(--text-light);
+        }
+        .module-tab.active { background: var(--secondary); color: #fff; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .home-banner { padding: 24px 14px; }
+            .home-banner h2 { font-size: 1.4rem; }
+            .feature-grid { grid-template-columns: repeat(2, 1fr); }
+            .content-card { padding: 14px; }
+            .nav-link { font-size: 0.82rem; padding: 0.35rem 0.5rem !important; }
+            .ai-result { max-height: 300px; }
+        }
+        .beian{
+            position: fixed;
+            bottom: 40px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #000000;
+        }
+        .beian a{
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fa fa-graduation-cap"></i>智学伴行</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto" id="navTabs">
+                    <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('home', this)"><i class="fa fa-home"></i>首页</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('tutor', this)"><i class="fa fa-comments"></i>AI答疑</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('plan', this)"><i class="fa fa-calendar-check-o"></i>学习规划</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('materials', this)"><i class="fa fa-database"></i>资料推荐</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('paper', this)"><i class="fa fa-pencil-square-o"></i>论文写作</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('report', this)"><i class="fa fa-file-text-o"></i>报告生成</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('errors', this)"><i class="fa fa-bookmark-o"></i>错题本</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('supervise', this)"><i class="fa fa-line-chart"></i>学习监督</a></li>
+                </ul>
+                <button class="btn btn-logout" onclick="handleLogout()"><i class="fa fa-sign-out"></i> 登出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-3">
+        <!-- ==================== HOME ==================== -->
+        <section id="home" class="content-section active">
+            <div class="home-banner">
+                <h2>智学伴行 — AI大学生全能学习助手</h2>
+                <p>七个AI引擎，全方位赋能你的大学学习之路</p>
+                <div>
+                    <button class="btn btn-light" onclick="switchTab('tutor')"><i class="fa fa-comments"></i> 开始提问</button>
+                    <button class="btn btn-outline-light" onclick="switchTab('plan')"><i class="fa fa-plus"></i> 创建课程</button>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card" onclick="switchTab('tutor')">
+                    <i class="fa fa-robot"></i><h5>AI智能答疑</h5><small>多轮对话·精准解答</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('plan')">
+                    <i class="fa fa-sitemap"></i><h5>个性化学习规划</h5><small>AI生成·科学路径</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('materials')">
+                    <i class="fa fa-book"></i><h5>智能资料推荐</h5><small>精准匹配·优质资源</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('paper')">
+                    <i class="fa fa-edit"></i><h5>论文写作助手</h5><small>大纲·引言·全文</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('report')">
+                    <i class="fa fa-bar-chart"></i><h5>报告文档生成</h5><small>实验·调研·PPT</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('errors')">
+                    <i class="fa fa-exclamation-triangle"></i><h5>错题本&知识图谱</h5><small>智能分析·查漏补缺</small>
+                </div>
+                <div class="feature-card" onclick="switchTab('supervise')">
+                    <i class="fa fa-trophy"></i><h5>学习监督与激励</h5><small>数据追踪·温暖鼓励</small>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h4><i class="fa fa-dashboard"></i>我的学习概览</h4>
+                <div class="stat-row" id="statsRow">
+                    <div class="stat-badge"><div class="num" id="statCourses">-</div><div class="lbl">课程数</div></div>
+                    <div class="stat-badge"><div class="num" id="statErrors">-</div><div class="lbl">错题收录</div></div>
+                    <div class="stat-badge"><div class="num" id="statWritings">-</div><div class="lbl">写作记录</div></div>
+                    <div class="stat-badge"><div class="num" id="statChats">-</div><div class="lbl">AI对话次数</div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 1. AI智能答疑 ==================== -->
+        <section id="tutor" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="content-card">
+                        <h4><i class="fa fa-book"></i>我的课程</h4>
+                        <div class="mb-3">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="tutorAddCourseInput" class="form-control" placeholder="输入新课程名...">
+                                <button class="btn btn-primary-custom" onclick="handleAddCourse('tutorAddCourseInput')">+</button>
+                            </div>
+                        </div>
+                        <div id="tutorCourseList" style="max-height:300px;overflow-y:auto;"></div>
+                        <button class="btn btn-outline-custom btn-sm w-100 mt-2" onclick="clearChatHistory()">清除对话历史</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-9">
+                    <div class="content-card">
+                        <h4><i class="fa fa-robot"></i>AI智能答疑 <small class="text-muted">(课程: <span id="tutorCourseLabel">未选择</span>)</small></h4>
+                        <textarea id="tutorQuestion" class="form-control" rows="3" placeholder="输入你的疑问，例如：什么是梯度下降？请用通俗的方式解释..."></textarea>
+                        <button class="btn btn-primary-custom mt-2 w-100" onclick="handleAskTutor()"><i class="fa fa-paper-plane"></i> 发送提问</button>
+                        <div id="tutorAnswer" class="ai-result">AI回答将显示在这里...<br>支持多轮对话，AI会记住上下文。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. 个性化学习规划 ==================== -->
+        <section id="plan" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-3">
+                    <div class="content-card">
+                        <h4><i class="fa fa-book"></i>我的课程</h4>
+                        <div class="mb-3">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="planAddCourseInput" class="form-control" placeholder="输入新课程名...">
+                                <button class="btn btn-primary-custom" onclick="handleAddCourse('planAddCourseInput')">生成</button>
+                            </div>
+                        </div>
+                        <div id="planCourseList" style="max-height:350px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-9">
+                    <div class="content-card">
+                        <h4><i class="fa fa-road"></i>学习路径 <small class="text-muted">(<span id="planCourseLabel">未选择课程</span>)</small></h4>
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-outline-custom btn-sm" onclick="regeneratePath()"><i class="fa fa-refresh"></i> 重新生成</button>
+                            <button class="btn btn-outline-custom btn-sm" onclick="recordStudyManual()"><i class="fa fa-clock-o"></i> 记录学习</button>
+                        </div>
+                        <div id="planPath" style="max-height:400px;overflow-y:auto;">
+                            <div class="text-muted text-center py-4">选择左侧课程查看AI生成的学习路径</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. 智能资料推荐 ==================== -->
+        <section id="materials" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="content-card">
+                        <h4><i class="fa fa-database"></i>资料推荐</h4>
+                        <div class="mb-3">
+                            <label class="form-label">关联课程（可选）</label>
+                            <select id="materialsCourseId" class="form-select" onchange="onMaterialsCourseChange()">
+                                <option value="">通用推荐（不关联课程）</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">主题/关键词</label>
+                            <input type="text" id="materialsTopic" class="form-control" placeholder="如：机器学习入门、中国古代文学...">
+                        </div>
+                        <button class="btn btn-primary-custom w-100" onclick="handleMaterials()"><i class="fa fa-search"></i> 推荐学习资料</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-8">
+                    <div class="content-card">
+                        <h4><i class="fa fa-list-alt"></i>推荐结果</h4>
+                        <div id="materialsResult" class="ai-result">输入课程名称和主题，获取AI推荐的学习资源</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 4. AI论文写作助手 ==================== -->
+        <section id="paper" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="content-card">
+                        <h4><i class="fa fa-pencil-square-o"></i>论文写作</h4>
+                        <div class="mb-3">
+                            <label class="form-label">论文主题 *</label>
+                            <input type="text" id="paperTopic" class="form-control" placeholder="输入论文主题...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">论文类型</label>
+                            <select id="paperType" class="form-select">
+                                <option>论文</option><option>课程论文</option><option>毕业论文提纲</option><option>文献综述</option><option>开题报告</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">额外要求（可选）</label>
+                            <textarea id="paperReqs" class="form-control" rows="3" placeholder="如：字数要求、特定格式、需要数据分析..."></textarea>
+                        </div>
+                        <button class="btn btn-primary-custom w-100" onclick="handleWritePaper()"><i class="fa fa-magic"></i> 生成论文</button>
+                    </div>
+                    <div class="content-card mt-3">
+                        <h4><i class="fa fa-history"></i>写作历史</h4>
+                        <div id="writingHistory" style="max-height:250px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-8">
+                    <div class="content-card">
+                        <h4><i class="fa fa-file-text"></i>论文内容</h4>
+                        <div id="paperResult" class="ai-result">输入论文主题，AI将为你生成包含标题、摘要、大纲、引言、正文框架、结论和参考文献建议的完整论文结构</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 5. AI报告/文档生成 ==================== -->
+        <section id="report" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="content-card">
+                        <h4><i class="fa fa-file-text-o"></i>报告生成</h4>
+                        <div class="mb-3">
+                            <label class="form-label">报告主题 *</label>
+                            <input type="text" id="reportTopic" class="form-control" placeholder="输入报告主题...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">报告类型</label>
+                            <select id="reportType" class="form-select">
+                                <option>实验报告</option><option>调研报告</option><option>PPT大纲</option><option>项目总结</option><option>读书笔记</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">额外要求（可选）</label>
+                            <textarea id="reportReqs" class="form-control" rows="3" placeholder="特殊格式、数据说明等..."></textarea>
+                        </div>
+                        <button class="btn btn-primary-custom w-100" onclick="handleGenerateReport()"><i class="fa fa-magic"></i> 生成报告</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-8">
+                    <div class="content-card">
+                        <h4><i class="fa fa-file-text"></i>报告内容</h4>
+                        <div id="reportResult" class="ai-result">输入报告主题和类型，AI将为你生成结构完整的报告文档</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 6. 错题本 & 知识图谱 ==================== -->
+        <section id="errors" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-5">
+                    <div class="content-card">
+                        <h4><i class="fa fa-plus-circle"></i>添加错题</h4>
+                        <div class="mb-3">
+                            <label class="form-label">关联课程（可选）</label>
+                            <select id="errorCourseId" class="form-select"><option value="">不关联课程</option></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">学科</label>
+                            <input type="text" id="errorSubject" class="form-control" placeholder="如：高等数学、Python编程...">
+                        </div>
+                        <textarea id="errorContent" class="form-control" rows="5" placeholder="粘贴你的错题内容...&#10;可以是题目截图文字、错误答案和正确思路"></textarea>
+                        <button class="btn btn-primary-custom mt-2 w-100" onclick="handleErrorAnalysis()"><i class="fa fa-search"></i> AI错题分析</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-7">
+                    <div class="content-card">
+                        <h4><i class="fa fa-bookmark-o"></i>我的错题本</h4>
+                        <div id="errorBookList" style="max-height:500px;overflow-y:auto;">
+                            <div class="text-muted text-center py-4">提交错题后，AI分析结果将显示在这里</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 7. 学习监督与激励 ==================== -->
+        <section id="supervise" class="content-section">
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="content-card">
+                        <h4><i class="fa fa-line-chart"></i>学习监督</h4>
+                        <div class="mb-3">
+                            <label class="form-label">选择课程（可选）</label>
+                            <select id="superviseCourseId" class="form-select"><option value="">全部课程</option></select>
+                        </div>
+                        <button class="btn btn-primary-custom w-100" onclick="handleStudyReport()"><i class="fa fa-bar-chart"></i> 生成学习报告</button>
+                        <hr>
+                        <p class="text-muted small"><i class="fa fa-info-circle"></i> 完成学习路径中的步骤会自动记录学习数据。也可以在"学习规划"页面手动记录。</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-8">
+                    <div class="content-card">
+                        <h4><i class="fa fa-trophy"></i>学习激励报告</h4>
+                        <div id="superviseResult" class="ai-result">点击"生成学习报告"，AI将根据你的学习数据给出个性化激励与建议</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <div class="beian"><img src="./备案图标.png" style="width: 16px; height: 16px; margin-right: 4px;"><a href="https://beian.mps.gov.cn/#/query/webSearch?code=51010502015234" rel="noreferrer" target="_blank">川公网安备51010502015234号</a>  |  icp备案号:<a href="https://beian.miit.gov.cn/#/Integrated/recordQuery" target="_blank">蜀ICP备2024107334号-2</a></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ==================== Global Config ====================
+        axios.defaults.baseURL = 'https://cxcy.wangzai.icu/api8000';
+        axios.defaults.withCredentials = true;
+        let currentCourseId = null;
+        let currentCourseName = '未选择课程';
+
+        axios.interceptors.request.use(config => {
+            const email = getStoredEmail();
+            if (email) config.headers['X-User-Email'] = email;
+            return config;
+        });
+
+        function getStoredEmail() {
+            return localStorage.getItem("userEmail") || (() => {
+                const c = document.cookie.split('; ');
+                for (const kv of c) { const [k,v] = kv.split('='); if (k==='userEmail') return v; }
+                return null;
+            })();
+        }
+
+        // ==================== Init ====================
+        window.onload = async function() {
+            if (!getStoredEmail()) { alert("请先登录"); window.location.href = "index_login.html"; return; }
+            try {
+                await axios.get('/api/check_login');
+                await loadAllCourses();
+                await loadStats();
+                await loadWritingHistory();
+                await loadErrorBooks();
+            } catch(e) {
+                alert("登录状态已失效，请重新登录");
+                localStorage.removeItem("userEmail");
+                document.cookie = "userEmail=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                window.location.href = "index_login.html";
+            }
+        };
+
+        // ==================== Tab Switching ====================
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('#navTabs .nav-link').forEach(l => l.classList.remove('active'));
+            if (el) el.classList.add('active');
+            // Refresh relevant data
+            if (tabId === 'plan') loadAllCourses();
+            if (tabId === 'tutor') loadAllCourses();
+            if (tabId === 'errors') loadErrorBooks();
+            if (tabId === 'materials') loadCoursesForSelect('materialsCourseId');
+            if (tabId === 'supervise') loadCoursesForSelect('superviseCourseId');
+            if (tabId === 'home') loadStats();
+        }
+
+        // ==================== Stats ====================
+        async function loadStats() {
+            try {
+                const res = await axios.get('/api/stats');
+                document.getElementById('statCourses').textContent = res.data.courses;
+                document.getElementById('statErrors').textContent = res.data.errors;
+                document.getElementById('statWritings').textContent = res.data.writings;
+                document.getElementById('statChats').textContent = res.data.ai_chats;
+            } catch(e) {}
+        }
+
+        // ==================== Course Management ====================
+        async function loadAllCourses() {
+            try {
+                const res = await axios.get('/api/get_courses');
+                const courses = res.data || [];
+                renderCourseList('tutorCourseList', courses, true);
+                renderCourseList('planCourseList', courses, true);
+                ['materialsCourseId', 'errorCourseId', 'superviseCourseId'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (sel) {
+                        sel.innerHTML = '<option value="">' + (id === 'materialsCourseId' ? '通用推荐' : id === 'superviseCourseId' ? '全部课程' : '不关联课程') + '</option>';
+                        courses.forEach(c => { sel.innerHTML += `<option value="${c.id}">${escapeHtml(c.course_name)}</option>`; });
+                    }
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCourseList(containerId, courses, allowSelect) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            if (courses.length === 0) {
+                el.innerHTML = '<div class="text-muted text-center py-3">暂无课程，上方输入创建</div>';
+                return;
+            }
+            el.innerHTML = courses.map(c => `
+                <div class="course-item ${currentCourseId === c.id ? 'active' : ''}" 
+                     onclick="selectCourse(${c.id}, '${escapeHtml(c.course_name).replace(/'/g, "&#039;")}')">
+                    <span class="course-name">${escapeHtml(c.course_name)}</span>
+                    <button class="btn btn-sm text-danger" onclick="event.stopPropagation();handleDeleteCourse(${c.id})"><i class="fa fa-trash-o"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function loadCoursesForSelect(selectId) {
+            axios.get('/api/get_courses').then(res => {
+                const sel = document.getElementById(selectId);
+                if (!sel) return;
+                sel.innerHTML = `<option value="">${selectId === 'materialsCourseId' ? '通用推荐' : selectId === 'superviseCourseId' ? '全部课程' : '不关联课程'}</option>`;
+                (res.data || []).forEach(c => { sel.innerHTML += `<option value="${c.id}">${escapeHtml(c.course_name)}</option>`; });
+            }).catch(() => {});
+        }
+
+        async function handleAddCourse(inputId) {
+            const input = document.getElementById(inputId);
+            const name = input.value.trim();
+            if (!name) { alert("请输入课程名称"); return; }
+            try {
+                const res = await axios.post('/api/add_course', { course_name: name });
+                alert(res.data.message);
+                input.value = '';
+                await loadAllCourses();
+                selectCourse(res.data.course_id, name);
+                await loadCoursePath(res.data.course_id);
+            } catch(e) { alert("创建失败：" + (e.response?.data?.message || "服务器错误")); }
+        }
+
+        async function selectCourse(id, name) {
+            currentCourseId = id;
+            currentCourseName = name;
+            document.getElementById('tutorCourseLabel').textContent = name;
+            document.getElementById('planCourseLabel').textContent = name;
+            // Highlight course items
+            document.querySelectorAll('.course-item').forEach(el => {
+                el.classList.remove('active');
+                if (el.querySelector('.course-name')?.textContent.trim() === name) el.classList.add('active');
+            });
+            await loadCoursePath(id);
+        }
+
+        async function handleDeleteCourse(id) {
+            if (!confirm("确定删除该课程及其所有关联数据？")) return;
+            try {
+                await axios.post('/api/delete_course', { course_id: id });
+                if (currentCourseId === id) {
+                    currentCourseId = null; currentCourseName = '未选择课程';
+                    document.getElementById('tutorCourseLabel').textContent = '未选择';
+                    document.getElementById('planCourseLabel').textContent = '未选择课程';
+                    document.getElementById('planPath').innerHTML = '<div class="text-muted text-center py-4">选择左侧课程查看AI生成的学习路径</div>';
+                }
+                await loadAllCourses();
+            } catch(e) { alert("删除失败：" + (e.response?.data?.message || "服务器错误")); }
+        }
+
+        // ==================== Learning Path ====================
+        async function loadCoursePath(courseId) {
+            if (!courseId) return;
+            const el = document.getElementById('planPath');
+            if (!el) return;
+            el.innerHTML = '<div class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin"></i></div>';
+            try {
+                const res = await axios.get(`/api/get_course_steps?course_id=${courseId}`);
+                if (res.data.status === 'success' && res.data.steps.length > 0) {
+                    el.innerHTML = res.data.steps.map(s => `
+                        <div class="step-item ${s.completed ? 'done' : ''}" onclick="toggleStep(${s.id}, ${!s.completed})">
+                            <div><strong>步骤${s.step_order}</strong> ${escapeHtml(s.step_description)}</div>
+                            <span class="badge bg-${s.completed ? 'success' : 'secondary'}">${s.completed ? '已完成' : '进行中'}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    el.innerHTML = '<div class="text-muted text-center py-3">暂无学习路径</div>';
+                }
+            } catch(e) { el.innerHTML = '<div class="text-danger text-center py-3">加载失败</div>'; }
+        }
+
+        async function toggleStep(stepId, completed) {
+            try {
+                await axios.post('/api/set_completed', { step_id: stepId, completed });
+                if (currentCourseId) await loadCoursePath(currentCourseId);
+            } catch(e) { alert("更新失败"); }
+        }
+
+        async function regeneratePath() {
+            if (!currentCourseId) { alert("请先选择课程"); return; }
+            try {
+                const res = await axios.post('/api/ai_learning_plan', { course_id: currentCourseId });
+                alert(res.data.message);
+                await loadCoursePath(currentCourseId);
+            } catch(e) { alert("重新生成失败"); }
+        }
+
+        async function recordStudyManual() {
+            if (!currentCourseId) { alert("请先选择课程"); return; }
+            const mins = prompt("请输入本次学习时长（分钟）：", "30");
+            if (!mins) return;
+            try {
+                await axios.post('/api/record_study', { course_id: currentCourseId, study_minutes: parseInt(mins) });
+                alert("学习记录已保存！");
+            } catch(e) { alert("记录失败"); }
+        }
+
+        // ==================== AI Tutor ====================
+        async function handleAskTutor() {
+            const question = document.getElementById('tutorQuestion').value.trim();
+            if (!question) { alert("请输入问题"); return; }
+            const answerEl = document.getElementById('tutorAnswer');
+            answerEl.innerHTML = '<i class="fa fa-spinner fa-spin"></i> AI正在思考...';
+            answerEl.classList.add('loading');
+            try {
+                const res = await axios.post('/api/ai_tutor', { question, course_id: currentCourseId });
+                answerEl.classList.remove('loading');
+                answerEl.textContent = res.data.answer;
+                document.getElementById('tutorQuestion').value = '';
+            } catch(e) {
+                answerEl.classList.remove('loading');
+                answerEl.innerHTML = '<span class="text-danger">请求失败，请重试</span>';
+            }
+        }
+
+        async function clearChatHistory() {
+            try {
+                await axios.post('/api/ai_clear_history', { course_id: currentCourseId });
+                alert("对话历史已清除");
+            } catch(e) { alert("清除失败"); }
+        }
+
+        // ==================== Materials ====================
+        async function handleMaterials() {
+            const courseId = document.getElementById('materialsCourseId').value;
+            const topic = document.getElementById('materialsTopic').value.trim();
+            const el = document.getElementById('materialsResult');
+            el.innerHTML = '<i class="fa fa-spinner fa-spin"></i> AI正在搜索推荐...';
+            try {
+                const res = await axios.post('/api/ai_materials', { course_id: courseId || null, topic, course_name: '' });
+                el.textContent = res.data.materials;
+            } catch(e) { el.innerHTML = '<span class="text-danger">请求失败：' + (e.response?.data?.message || '') + '</span>'; }
+        }
+
+        function onMaterialsCourseChange() {
+            // just for tracking
+        }
+
+        // ==================== Paper Writing ====================
+        async function handleWritePaper() {
+            const topic = document.getElementById('paperTopic').value.trim();
+            if (!topic) { alert("请输入论文主题"); return; }
+            const el = document.getElementById('paperResult');
+            el.innerHTML = '<i class="fa fa-spinner fa-spin"></i> AI正在撰写...（论文生成可能需要30-60秒）';
+            try {
+                const res = await axios.post('/api/ai_write_paper', {
+                    topic, paper_type: document.getElementById('paperType').value,
+                    requirements: document.getElementById('paperReqs').value.trim()
+                });
+                el.textContent = res.data.content;
+                loadWritingHistory();
+            } catch(e) { el.innerHTML = '<span class="text-danger">生成失败：' + (e.response?.data?.message || '') + '</span>'; }
+        }
+
+        // ==================== Report Generation ====================
+        async function handleGenerateReport() {
+            const topic = document.getElementById('reportTopic').value.trim();
+            if (!topic) { alert("请输入报告主题"); return; }
+            const el = document.getElementById('reportResult');
+            el.innerHTML = '<i class="fa fa-spinner fa-spin"></i> AI正在生成报告...';
+            try {
+                const res = await axios.post('/api/ai_generate_report', {
+                    topic, report_type: document.getElementById('reportType').value,
+                    requirements: document.getElementById('reportReqs').value.trim()
+                });
+                el.textContent = res.data.content;
+                loadWritingHistory();
+            } catch(e) { el.innerHTML = '<span class="text-danger">生成失败：' + (e.response?.data?.message || '') + '</span>'; }
+        }
+
+        async function loadWritingHistory() {
+            const el = document.getElementById('writingHistory');
+            if (!el) return;
+            try {
+                const res = await axios.get('/api/get_writings');
+                if (!res.data.length) { el.innerHTML = '<small class="text-muted">暂无写作记录</small>'; return; }
+                el.innerHTML = res.data.map(w => `
+                    <div class="mb-2 p-2 rounded" style="background:#F8FAFC;cursor:pointer;font-size:0.85rem;" 
+                         onclick="loadWritingDetail(${w.id})">
+                        <strong>${w.writing_type === 'report' ? '报告' : '论文'}</strong> ${escapeHtml(w.topic).substring(0, 20)}
+                        <br><small class="text-muted">${w.created_at}</small>
+                    </div>
+                `).join('');
+            } catch(e) { el.innerHTML = '<small class="text-muted">加载失败</small>'; }
+        }
+
+        async function loadWritingDetail(id) {
+            try {
+                const res = await axios.get(`/api/get_writing_detail?id=${id}`);
+                if (res.data.status === 'success') {
+                    const w = res.data.writing;
+                    // Show in active result area
+                    const activeSection = document.querySelector('.content-section.active');
+                    if (activeSection) {
+                        const resultEl = activeSection.querySelector('.ai-result');
+                        if (resultEl) {
+                            resultEl.textContent = w.content;
+                        }
+                    }
+                }
+            } catch(e) { alert("加载详情失败"); }
+        }
+
+        // ==================== Error Book ====================
+        async function handleErrorAnalysis() {
+            const content = document.getElementById('errorContent').value.trim();
+            if (!content) { alert("请输入错题内容"); return; }
+            const subject = document.getElementById('errorSubject').value.trim();
+            const courseId = document.getElementById('errorCourseId').value;
+            // Show immediate feedback
+            const listEl = document.getElementById('errorBookList');
+            listEl.innerHTML = '<div class="text-center py-3"><i class="fa fa-spinner fa-spin"></i> AI正在分析错题...</div>';
+            try {
+                await axios.post('/api/ai_error_analysis', { error_content: content, subject, course_id: courseId || null });
+                document.getElementById('errorContent').value = '';
+                await loadErrorBooks();
+            } catch(e) {
+                listEl.innerHTML = '<div class="text-danger text-center py-3">分析失败，请重试</div>';
+            }
+        }
+
+        async function loadErrorBooks() {
+            const el = document.getElementById('errorBookList');
+            if (!el) return;
+            try {
+                const res = await axios.get('/api/get_error_books');
+                if (!res.data.length) {
+                    el.innerHTML = '<div class="text-muted text-center py-4">还没有错题，开始提交吧！</div>';
+                    return;
+                }
+                el.innerHTML = res.data.map(e => `
+                    <div class="error-card ${e.resolved ? 'resolved' : ''}">
+                        <div class="d-flex justify-content-between">
+                            <strong>${escapeHtml(e.subject || '未分类')}</strong>
+                            <div>
+                                <button class="btn btn-sm ${e.resolved ? 'btn-success' : 'btn-outline-success'}" 
+                                        onclick="toggleErrorResolved(${e.id}, ${!e.resolved})">${e.resolved ? '已解决' : '标记解决'}</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteError(${e.id})"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="mt-2"><small class="text-muted">错题：</small>${escapeHtml(e.error_content).substring(0, 100)}...</div>
+                        <div class="mt-2"><small class="text-muted">AI分析：</small>${escapeHtml((e.ai_analysis || '').substring(0, 200))}...</div>
+                        <small class="text-muted">${e.created_at}</small>
+                    </div>
+                `).join('');
+            } catch(e) { el.innerHTML = '<div class="text-muted text-center py-3">加载失败</div>'; }
+        }
+
+        async function toggleErrorResolved(id, resolved) {
+            try {
+                await axios.post('/api/toggle_error_resolved', { error_id: id, resolved });
+                await loadErrorBooks();
+            } catch(e) { alert("操作失败"); }
+        }
+
+        async function deleteError(id) {
+            if (!confirm("确定删除这条错题？")) return;
+            try {
+                await axios.post('/api/delete_error', { error_id: id });
+                await loadErrorBooks();
+            } catch(e) { alert("删除失败"); }
+        }
+
+        // ==================== Study Supervision ====================
+        async function handleStudyReport() {
+            const el = document.getElementById('superviseResult');
+            el.innerHTML = '<i class="fa fa-spinner fa-spin"></i> AI正在分析学习数据...';
+            const courseId = document.getElementById('superviseCourseId').value;
+            try {
+                const res = await axios.post('/api/ai_study_report', { course_id: courseId || null });
+                el.textContent = res.data.report;
+            } catch(e) {
+                el.innerHTML = '<span class="text-warning">' + (e.response?.data?.message || '暂无学习数据，请先在课程中完成学习步骤再查看报告') + '</span>';
+            }
+        }
+
+        // ==================== Logout ====================
+        function handleLogout() {
+            if (confirm("确定要退出登录吗？")) {
+                localStorage.removeItem("userEmail");
+                document.cookie = "userEmail=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                window.location.href = "index_login.html";
+            }
+        }
+
+        // ==================== Utils ====================
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        }
+    </script>
+</body>
+</html>
